@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrar Roles de Usuarios</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900">
+  <!-- Sidebar -->
+  <div class="flex min-h-screen">
+    <nav class="bg-blue-900 text-white w-full md:w-64 space-y-6 py-6 px-4 md:py-7 md:px-2">
+      <!-- Información del Usuario -->
+      <div class="text-center mb-6">
+        <p class="text-lg font-bold">Bienvenido,</p>
+        <p class="text-xl font-semibold">{{ current_user.username }}</p>
+        <p class="text-sm italic">
+          Rol: 
+          {% if current_user.role_id == 1 %} Administrador
+          {% elif current_user.role_id == 2 %} Usuario Premium
+          {% elif current_user.role_id == 3 %} Usuario Regular
+          {% else %} Invitado
+          {% endif %}
+        </p>
+      </div>
+
+      <!-- Navegación -->
+      <ul class="mt-4 space-y-4">
+        <li>
+          <a href="/" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700">Inicio</a>
+        </li>
+        {% if current_user.role_id in [1, 2, 3] %}
+        <li>
+          <a href="/estadisticas" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700">Ver Estadísticas</a>
+        </li>
+        <li>
+          <a href="/reportes" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700">Ver Reportes</a>
+        </li>
+        {% endif %}
+        {% if current_user.role_id == 1 %}
+        <li>
+          <a href="/admin" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-blue-700">Administrador</a>
+        </li>
+        {% endif %}
+        <li>
+          <a href="{{ url_for('logout') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-red-700 bg-red-500">Logout</a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container mx-auto p-6 mt-6 bg-white rounded-lg shadow-lg">
+        <h1 class="text-4xl font-bold text-center mb-8">Administrar Roles de Usuarios</h1>
+    
+        <table class="table-auto w-full bg-gray-100 shadow-md rounded-lg border border-gray-200">
+          <thead>
+            <tr class="bg-blue-900 text-white">
+              <th class="px-4 py-2 text-left">ID</th>
+              <th class="px-4 py-2 text-left">Usuario</th>
+              <th class="px-4 py-2 text-left">Rol Actual</th>
+              <th class="px-4 py-2 text-center">Nuevo Rol</th>
+              <th class="px-4 py-2 text-center">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr class="bg-white hover:bg-gray-100 transition">
+              <td class="border px-4 py-2">{{ user[0] }}</td>
+              <td class="border px-4 py-2">{{ user[1] }}</td>
+              <td class="border px-4 py-2">
+                {% for role in roles %}
+                  {% if user[2] == role[0] %}
+                    {{ role[1] }}
+                  {% endif %}
+                {% endfor %}
+              </td>
+              <td class="border px-4 py-2 text-center">
+                <form method="POST" action="{{ url_for('manage_roles') }}" class="inline">
+                  <input type="hidden" name="user_id" value="{{ user[0] }}">
+                  <select name="new_role" class="border border-gray-300 rounded-lg px-2 py-1">
+                    {% for role in roles %}
+                    <option value="{{ role[0] }}" {% if user[2] == role[0] %}selected{% endif %}>
+                      {{ role[1] }}
+                    </option>
+                    {% endfor %}
+                  </select>
+              </td>
+              <td class="border px-4 py-2 text-center">
+                  <button type="submit" class="bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-700 transition">
+                    Guardar
+                  </button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+  </div>
+</body>
+</html>
+
