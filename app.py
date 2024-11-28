@@ -227,32 +227,46 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 # Ruta de registro
+# Ruta para el registro de usuarios
+import requests
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
+        # Recibir los datos del formulario
         username = request.form['username']
         password = request.form['password']
         role_id = request.form['role_id']
-        payment_proof = request.files.get('payment_proof')  # Cambiado a payment_proof
+        payment_proof = request.files.get('payment_proof')
+        
+        # Datos obtenidos desde la API de RENIEC (ya recibidos desde la vista)
+        nombres = request.form['nombres']
+        apellido_paterno = request.form['apellido_paterno']
+        apellido_materno = request.form['apellido_materno']
 
-        # Validar si se subió el archivo y si es permitido
+        # Validar si el comprobante de pago es válido
         if payment_proof and allowed_file(payment_proof.filename):
-            # Guardar el archivo en la carpeta de uploads
+            # Guardar archivo de pago
             filename = secure_filename(payment_proof.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             payment_proof.save(file_path)
 
-            # Guardar datos del usuario en la base de datos
+            # Hash de la contraseña
             password_hash = generate_password_hash(password)
+
+            # Insertar datos del usuario en la base de datos
             try:
                 cursor.execute(
-                    "INSERT INTO users (username, password_hash, role_id, payment_proof_path) VALUES (%s, %s, %s, %s)",
-                    (username, password_hash, role_id, filename)
+                    """INSERT INTO users (username, password_hash, role_id, is_approved, payment_proof_path, nombres, apellido_paterno, apellido_materno) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""",
+                    (username, password_hash, role_id, False, filename, nombres, apellido_paterno, apellido_materno)
                 )
                 db.commit()
                 flash("Registro exitoso. Tu comprobante ha sido enviado para revisión.", "success")
                 return redirect(url_for('login'))
             except Exception as e:
+                db.rollback()
                 flash(f"Error al registrar usuario: {str(e)}", "danger")
         else:
             flash("Debe subir un comprobante válido en formato PNG, JPG, JPEG o GIF.", "danger")
@@ -261,10 +275,13 @@ def register():
     roles = [(2, "Usuario Premium"), (3, "Usuario Regular")]  # Simulación de roles disponibles
     return render_template('register.html', roles=roles)
 
+
+
 # Ruta para servir las imágenes subidas
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 
 
 
@@ -368,6 +385,8 @@ def admin_page():
         search_query=search_query,
         noticias_por_dia=df
     )
+    
+
 
 
 @app.route('/')
